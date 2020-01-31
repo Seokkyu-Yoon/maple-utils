@@ -7,11 +7,14 @@
     "ios": "react-native run-ios",
     "start": "react-native start",
     "test": "jest",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "link-sound": "react-native link react-native-sound",
+    "unlink-sound": "react-native unlink react-native-sound"
   },
   "dependencies": {
     "react": "16.9.0",
-    "react-native": "0.61.5"
+    "react-native": "^0.61.5",
+    "react-native-sound": "^0.11.0"
   },
   "devDependencies": {
     "@babel/core": "^7.6.2",
