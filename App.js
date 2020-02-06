@@ -12,6 +12,7 @@ import {
   Text,
   View,
   Picker,
+  Animated,
   TextInput,
   TouchableOpacity,
   ScrollView,
@@ -24,30 +25,30 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 10,
     paddingHorizontal: 20,
-    backgroundColor: 'orange',
+    backgroundColor: 'darkorange',
   },
   seperator: {
     height: 2,
-    backgroundColor: 'limegreen',
+    backgroundColor: '#25CC32',
   },
   pickerSong: {
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
-    backgroundColor: 'cornsilk',
+    backgroundColor: '#FFEAD1',
   },
   alarmsHolderGuide: {
     flex: 1,
-    paddingVertical: 5,
+    paddingVertical: 2,
     borderBottomLeftRadius: 10,
     borderBottomRightRadius: 10,
-    backgroundColor: 'cornsilk',
+    backgroundColor: '#FFEAD1',
   },
   alarmsHolder: {
     paddingHorizontal: 5,
   },
   alarmHolder: {
     borderRadius: 5,
-    marginVertical: 3,
+    marginVertical: 2,
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -71,11 +72,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 5,
   },
-  buttonStart: {
-    backgroundColor: 'green',
-  },
   buttonRemove: {
-    backgroundColor: 'red',
+    backgroundColor: '#C22D12',
   },
   buttonText: {
     fontSize: 16,
@@ -83,7 +81,7 @@ const styles = StyleSheet.create({
   },
   bgAlarmItem: {
     justifyContent: 'space-between',
-    backgroundColor: 'deepskyblue',
+    backgroundColor: '#2280B3',
   },
   alarmTime: {
     fontSize: 18,
@@ -92,7 +90,7 @@ const styles = StyleSheet.create({
   },
   bgAlarmAdd: {
     justifyContent: 'center',
-    backgroundColor: 'limegreen',
+    backgroundColor: '#25CC32',
   },
   addAlarmText: {
     color: 'white',
@@ -177,6 +175,19 @@ class AddAlarm extends React.Component {
   }
 }
 class Alarm extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      fadeIn: new Animated.Value(0),
+    };
+  }
+  componentDidMount() {
+    Animated.timing(this.state.fadeIn, {
+      toValue: 1,
+      duration: 500,
+    }).start();
+  }
+
   timerAction = async () => {
     const {index, data, update, alarmController} = this.props;
     if (data.hour + data.min + data.sec === 0) {
@@ -188,9 +199,9 @@ class Alarm extends React.Component {
   };
   getButtonState = (onStart, onStop) => {
     if (this.props.data.state) {
-      return {text: '중지', color: 'yellow', action: onStop};
+      return {text: '중지', color: '#C2AA1D', action: onStop};
     }
-    return {text: '시작', color: 'green', action: onStart};
+    return {text: '시작', color: '#25CC32', action: onStart};
   };
 
   render() {
@@ -214,6 +225,7 @@ class Alarm extends React.Component {
       }
     };
     const onRemove = () => {
+      this.setState({visible: false});
       if (data.state === 1) {
         clearInterval(data.timer);
       }
@@ -225,9 +237,23 @@ class Alarm extends React.Component {
     const editable = !data.state;
 
     const button = this.getButtonState(onStart, onStop);
-
     return (
-      <View style={[styles.alarmHolder, styles.bgAlarmItem]}>
+      <Animated.View
+        style={[
+          styles.alarmHolder,
+          styles.bgAlarmItem,
+          {
+            opacity: this.state.fadeIn,
+            transform: [
+              {
+                translateY: this.state.fadeIn.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [-10, 0],
+                }),
+              },
+            ],
+          },
+        ]}>
         <View style={styles.timeHolder}>
           <TextInput
             style={styles.alarmTime}
@@ -282,11 +308,7 @@ class Alarm extends React.Component {
         </View>
         <View style={styles.buttonHolder}>
           <TouchableOpacity
-            style={[
-              styles.button,
-              styles.buttonStart,
-              {backgroundColor: button.color},
-            ]}
+            style={[styles.button, {backgroundColor: button.color}]}
             onPress={button.action}
             activeOpacity={0.8}>
             <Text style={styles.buttonText}>{button.text}</Text>
@@ -298,7 +320,7 @@ class Alarm extends React.Component {
             <Text style={styles.buttonText}>삭제</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </Animated.View>
     );
   }
 }
@@ -364,7 +386,6 @@ export default class App extends React.Component {
     if (currAlarm.timer) {
       clearInterval(currAlarm.timer);
     }
-
     this.setState({
       alarms: [
         ...alarms.slice(0, index),
