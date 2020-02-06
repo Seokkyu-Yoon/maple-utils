@@ -85,7 +85,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'deepskyblue',
   },
   alarmTime: {
+    fontSize: 18,
     textAlign: 'right',
+    color: 'black',
   },
   bgAlarmAdd: {
     justifyContent: 'center',
@@ -99,6 +101,7 @@ const styles = StyleSheet.create({
 });
 
 const DEFAULT_ALARM = {
+  state: 0,
   timer: null,
   hour: 0,
   min: 15,
@@ -128,7 +131,6 @@ const playSound = ({song}) => {
 
 const oneSecLater = time => {
   let {hour, min, sec} = time;
-
   sec -= 1;
   if (sec === -1) {
     sec = 59;
@@ -174,10 +176,54 @@ class AddAlarm extends React.Component {
   }
 }
 class Alarm extends React.Component {
+  timerAction = async () => {
+    const {index, data, update, alarmController} = this.props;
+    if (data.hour + data.min + data.sec === 0) {
+      clearInterval(data.timer);
+      alarmController.play();
+      update(index, {state: 2, timer: null});
+    }
+    update(index, {...oneSecLater(data)});
+  };
+  getButtonState = (onStart, onStop) => {
+    if (this.props.data.state) {
+      return {text: '중지', color: 'yellow', action: onStop};
+    }
+    return {text: '시작', color: 'green', action: onStart};
+  };
+
   render() {
     const MAX_MIN = 60;
     const MAX_SEC = 60;
-    const {data, index, update, remove} = this.props;
+    const {data, index, update, remove, alarmController} = this.props;
+    const onStart = () => {
+      if (data.state) {
+        return;
+      }
+      const timer = setInterval(this.timerAction, 1000);
+      update(index, {state: 1, timer});
+    };
+    const onStop = () => {
+      if (data.state === 1) {
+        clearInterval(data.timer);
+        update(index, {state: 0, timer: null});
+      } else {
+        alarmController.stop();
+        update(index, DEFAULT_ALARM);
+      }
+    };
+    const onRemove = () => {
+      if (data.state === 1) {
+        clearInterval(data.timer);
+      }
+      if (data.state === 2) {
+        alarmController.stop();
+      }
+      remove(index);
+    };
+    const editable = !data.state;
+
+    const button = this.getButtonState(onStart, onStop);
 
     return (
       <View style={[styles.alarmHolder, styles.bgAlarmItem]}>
@@ -193,7 +239,8 @@ class Alarm extends React.Component {
             onBlur={() => {
               const hour = Number(data.hour);
               update(index, {hour});
-            }}>
+            }}
+            editable={editable}>
             {data.hour}
           </TextInput>
           <Text>시간</Text>
@@ -209,7 +256,8 @@ class Alarm extends React.Component {
               const num = Number(data.min);
               const min = num < MAX_MIN ? num : MAX_MIN - 1;
               update(index, {min});
-            }}>
+            }}
+            editable={editable}>
             {data.min}
           </TextInput>
           <Text>분</Text>
@@ -222,24 +270,29 @@ class Alarm extends React.Component {
               update(index, {sec});
             }}
             onBlur={() => {
-              const num = Number(data.min);
-              const min = num < MAX_SEC ? num : MAX_SEC - 1;
-              update(index, {min});
-            }}>
+              const num = Number(data.sec);
+              const sec = num < MAX_SEC ? num : MAX_SEC - 1;
+              update(index, {sec});
+            }}
+            editable={editable}>
             {data.sec}
           </TextInput>
           <Text>초</Text>
         </View>
         <View style={styles.buttonHolder}>
           <TouchableOpacity
-            style={[styles.button, styles.buttonStart]}
-            onPress={() => console.log(data)}
+            style={[
+              styles.button,
+              styles.buttonStart,
+              {backgroundColor: button.color},
+            ]}
+            onPress={button.action}
             activeOpacity={0.8}>
-            <Text style={styles.buttonText}>시작</Text>
+            <Text style={styles.buttonText}>{button.text}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.button, styles.buttonRemove]}
-            onPress={() => remove(index)}
+            onPress={onRemove}
             activeOpacity={0.8}>
             <Text style={styles.buttonText}>삭제</Text>
           </TouchableOpacity>
@@ -250,11 +303,14 @@ class Alarm extends React.Component {
 }
 class Alarms extends React.Component {
   render() {
-    const {alarms, update, remove} = this.props;
+    const {alarms, update, remove, alarmController} = this.props;
     if (!alarms.length) {
-      return <View />;
+      return <Text style={styles.buttonText}>등록된 알람이 없습니다</Text>;
     }
     return alarms.map((data, index) => {
+      if (!data) {
+        return;
+      }
       return (
         <Alarm
           key={`${index}`}
@@ -262,6 +318,7 @@ class Alarms extends React.Component {
           data={data}
           update={update}
           remove={remove}
+          alarmController={alarmController}
         />
       );
     });
@@ -272,30 +329,25 @@ export default class App extends React.Component {
   state = {
     song: 0,
     sound: null,
-    alarming: 0,
     alarms: [],
+    alarming: 0,
   };
 
   setSong = song => {
     this.setState({song});
   };
   addAlarm = () => {
-    const {
-      state: {alarms},
-    } = this;
+    const {alarms} = this.state;
 
     this.setState({
       alarms: [...alarms, DEFAULT_ALARM],
     });
   };
   updateAlarm = (index, data) => {
-    const {
-      state: {alarms},
-    } = this;
+    const {alarms} = this.state;
 
     const alarm = alarms[index];
     const fixedAlarm = Object.assign({}, alarm, data);
-
     this.setState({
       alarms: [
         ...alarms.slice(0, index),
@@ -305,9 +357,7 @@ export default class App extends React.Component {
     });
   };
   removeAlarm = index => {
-    const {
-      state: {alarms},
-    } = this;
+    const {alarms} = this.state;
 
     const currAlarm = alarms[index];
     if (currAlarm.timer) {
@@ -315,23 +365,47 @@ export default class App extends React.Component {
     }
 
     this.setState({
-      alarms: [...alarms.slice(0, index), ...alarms.slice(index + 1)],
+      alarms: [
+        ...alarms.slice(0, index),
+        undefined,
+        ...alarms.slice(index + 1),
+      ],
     });
   };
+  playSong = () => {
+    const {alarming, song} = this.state;
+    if (alarming > 0) {
+      this.setState({alarming: alarming + 1});
+      return;
+    }
+    const songFile = songs[song].file;
+    const sound = playSound({song: songFile});
+    this.setState({alarming: alarming + 1, sound});
+  };
+  stopSong = () => {
+    const {alarming, sound} = this.state;
+    if (alarming > 1) {
+      this.setState({alarming: alarming - 1});
+      return;
+    }
+    sound.stop();
+    this.setState({alarming: 0, sound: null});
+  };
+  alarmController = {play: this.playSong, stop: this.stopSong};
   render() {
-    const {
-      updateAlarm,
-      removeAlarm,
-      state: {song, alarms},
-    } = this;
-
+    const {song, alarms} = this.state;
     return (
       <View style={styles.body}>
         <SongPicker song={song} onValueChange={this.setSong} />
         <View style={styles.seperator} />
         <View style={styles.alarmsHolderGuide}>
           <ScrollView style={styles.alarmsHolder}>
-            <Alarms alarms={alarms} update={updateAlarm} remove={removeAlarm} />
+            <Alarms
+              alarms={alarms}
+              update={this.updateAlarm}
+              remove={this.removeAlarm}
+              alarmController={this.alarmController}
+            />
             <AddAlarm onPress={this.addAlarm} />
           </ScrollView>
         </View>
