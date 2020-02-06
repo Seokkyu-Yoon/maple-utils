@@ -37,6 +37,8 @@ target 'MapleUtils' do
 
   pod 'RNSound', :path => '../node_modules/react-native-sound'
 
+  pod 'react-native-keep-awake', :path => '../node_modules/react-native-keep-awake'
+
   target 'MapleUtilsTests' do
     inherit! :search_paths
     # Pods for testing

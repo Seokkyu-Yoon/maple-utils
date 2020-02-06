@@ -9,11 +9,15 @@
     "test": "jest",
     "lint": "eslint .",
     "link-sound": "react-native link react-native-sound",
-    "unlink-sound": "react-native unlink react-native-sound"
+    "link-awake": "react-native link react-native-keep-awake",
+    "unlink-sound": "react-native unlink react-native-sound",
+    "unlink-awake": "react-native unlink react-native-keep-awake",
+    "build-apk": "react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle --assets-dest android/app/src/main/res/"
   },
   "dependencies": {
     "react": "16.9.0",
     "react-native": "^0.61.5",
+    "react-native-keep-awake": "^4.0.0",
     "react-native-sound": "^0.11.0"
   },
   "devDependencies": {

@@ -17,6 +17,7 @@ import {
   ScrollView,
 } from 'react-native';
 import Sound from 'react-native-sound';
+import KeepAwake from 'react-native-keep-awake';
 
 const styles = StyleSheet.create({
   body: {
@@ -110,8 +111,8 @@ const DEFAULT_ALARM = {
 
 const songs = [];
 const addSong = (file, label) => songs.push({file, label});
-addSong('currbgm.mp3', '메이플 배경음악(구)');
-addSong('pastbgm.mp3', '메이플 배경음악(현)');
+addSong('pastbgm.mp3', '메이플 배경음악(구)');
+addSong('currbgm.mp3', '메이플 배경음악(현)');
 
 const playSound = ({song}) => {
   const sound = new Sound(song, Sound.MAIN_BUNDLE, err => {
@@ -304,7 +305,7 @@ class Alarm extends React.Component {
 class Alarms extends React.Component {
   render() {
     const {alarms, update, remove, alarmController} = this.props;
-    if (!alarms.length) {
+    if (alarms.every(value => value === undefined)) {
       return <Text style={styles.buttonText}>등록된 알람이 없습니다</Text>;
     }
     return alarms.map((data, index) => {
@@ -396,6 +397,7 @@ export default class App extends React.Component {
     const {song, alarms} = this.state;
     return (
       <View style={styles.body}>
+        <KeepAwake />
         <SongPicker song={song} onValueChange={this.setSong} />
         <View style={styles.seperator} />
         <View style={styles.alarmsHolderGuide}>
